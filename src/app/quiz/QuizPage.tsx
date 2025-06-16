@@ -1,22 +1,55 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { verbs } from '@/data/verbsA1';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getRandomVerbs } from '../utils/shuffleVerbs';
+
+type Verb = {
+	infinitiv: string;
+	options: string[];
+	correct: string;
+	level: string;
+	type: string;
+};
 
 export default function QuizPage() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
+
 	const id = parseInt(searchParams.get('id') || '1', 10);
 	const correct = parseInt(searchParams.get('correct') || '0', 10);
+	const levelParam = searchParams.get('level') || 'A1';
 
-	const questions = useMemo(() => getRandomVerbs(), []);
-
-	const question = questions[id - 1];
+	const [questions, setQuestions] = useState<Verb[]>([]);
 	const [selected, setSelected] = useState<string | null>(null);
 	const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
 
+	// Отримуємо / генеруємо список питань один раз
+	useEffect(() => {
+		const storageKey = `questions-${levelParam}`;
+
+		const stored = sessionStorage.getItem(storageKey);
+		if (stored) {
+			setQuestions(JSON.parse(stored));
+		} else {
+			const generated = getRandomVerbs(levelParam);
+			sessionStorage.setItem(storageKey, JSON.stringify(generated));
+			setQuestions(generated);
+		}
+	}, [levelParam]);
+
+	// Перемішуємо опції
+	useEffect(() => {
+		setSelected(null);
+		const question = questions[id - 1];
+		if (question) {
+			setShuffledOptions([...question.options].sort(() => Math.random() - 0.5));
+		}
+	}, [id, questions]);
+
+	const question = questions[id - 1];
+
+	// Обробка відповіді
 	useEffect(() => {
 		if (!question || !selected) return;
 
@@ -27,24 +60,12 @@ export default function QuizPage() {
 				if (id >= questions.length) {
 					router.push(`/result?correct=${correct + 1}&total=${questions.length}`);
 				} else {
-					router.push(`?id=${id + 1}&correct=${correct + 1}`);
+					router.push(`?id=${id + 1}&correct=${correct + 1}&level=${levelParam}`);
 				}
 			}, 1000);
-
 			return () => clearTimeout(timeout);
 		}
-	}, [selected, question, id, correct, router]);
-
-	function shuffle<T>(array: T[]): T[] {
-		return [...array].sort(() => Math.random() - 0.5);
-	}
-
-	useEffect(() => {
-		setSelected(null);
-		if (question) {
-			setShuffledOptions(shuffle(question.options));
-		}
-	}, [id]);
+	}, [selected, question, id, correct, levelParam, questions.length, router]);
 
 	if (!question) {
 		return (
@@ -96,7 +117,7 @@ export default function QuizPage() {
 							if (id >= questions.length) {
 								router.push(`/result?correct=${correct}&total=${questions.length}`);
 							} else {
-								router.push(`?id=${id + 1}&correct=${correct}`);
+								router.push(`?id=${id + 1}&correct=${correct}&level=${levelParam}`);
 							}
 						}}
 						className="px-4 py-2 bg-blue-500 text-white rounded hover:cursor-pointer hover:bg-blue-600"

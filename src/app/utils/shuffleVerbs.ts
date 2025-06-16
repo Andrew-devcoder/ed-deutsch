@@ -1,7 +1,22 @@
-import { verbs } from '@/data/verbsA1';
+import { verbsA1 } from '@/data/verbsA1';
+import { verbsA2 } from '@/data/verbsA2';
 
-export function getRandomVerbs(count: number = 10) {
-	const a1Verbs = verbs.filter((v) => v.level === 'A1');
-	const shuffled = [...a1Verbs].sort(() => Math.random() - 0.5);
-	return shuffled.slice(0, count);
+export function getRandomVerbs(levelParam: string, countTotal: number = 10) {
+	const levels = levelParam.split(',').filter((l) => l === 'A1' || l === 'A2');
+
+	let selected: typeof verbsA1 = [];
+
+	if (levels.includes('A1') && levels.includes('A2')) {
+		selected = [...shuffle(verbsA1).slice(0, countTotal / 2), ...shuffle(verbsA2).slice(0, countTotal / 2)];
+	} else if (levels.includes('A1')) {
+		selected = shuffle(verbsA1).slice(0, countTotal);
+	} else if (levels.includes('A2')) {
+		selected = shuffle(verbsA2).slice(0, countTotal);
+	}
+
+	return shuffle(selected);
+}
+
+function shuffle<T>(array: T[]): T[] {
+	return [...array].sort(() => Math.random() - 0.5);
 }
