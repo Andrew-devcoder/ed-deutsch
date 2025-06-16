@@ -1,15 +1,19 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { verbs } from '@/data/verbs';
-import { useEffect, useState } from 'react';
+import { verbs } from '@/data/verbsA1';
+import { useEffect, useMemo, useState } from 'react';
+import { getRandomVerbs } from '../utils/shuffleVerbs';
 
 export default function QuizPage() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const id = parseInt(searchParams.get('id') || '1', 10);
 	const correct = parseInt(searchParams.get('correct') || '0', 10);
-	const question = verbs[id - 1];
+
+	const questions = useMemo(() => getRandomVerbs(), []);
+
+	const question = questions[id - 1];
 	const [selected, setSelected] = useState<string | null>(null);
 	const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
 
@@ -18,15 +22,17 @@ export default function QuizPage() {
 
 		const isCorrect = selected === question.correct;
 
-		const timeout = setTimeout(() => {
-			if (id >= verbs.length) {
-				router.push(`/result?correct=${isCorrect ? correct + 1 : correct}&total=${verbs.length}`);
-			} else {
-				router.push(`?id=${id + 1}&correct=${isCorrect ? correct + 1 : correct}`);
-			}
-		}, 1000);
+		if (isCorrect) {
+			const timeout = setTimeout(() => {
+				if (id >= questions.length) {
+					router.push(`/result?correct=${correct + 1}&total=${questions.length}`);
+				} else {
+					router.push(`?id=${id + 1}&correct=${correct + 1}`);
+				}
+			}, 1000);
 
-		return () => clearTimeout(timeout);
+			return () => clearTimeout(timeout);
+		}
 	}, [selected, question, id, correct, router]);
 
 	function shuffle<T>(array: T[]): T[] {
@@ -51,19 +57,20 @@ export default function QuizPage() {
 
 	return (
 		<div className="p-4">
-			<h2 className="text-xl mb-4">
+			<h2 className="text-xl mb-4 text-center">
 				Partizip II для: <b>{question.infinitiv}</b>
 			</h2>
-			<div className="grid gap-2 grid-cols-2">
+			<div className="grid gap-2 grid-cols-2 max-w-md mx-auto">
 				{shuffledOptions.map((option) => {
 					const isCorrect = option === question.correct;
 					const isSelected = selected === option;
 
-					let buttonStyle = 'border px-4 py-2 rounded hover:bg-blue-100';
+					let buttonStyle =
+						'border px-4 py-2 rounded transition-colors hover:bg-blue-500 hover:cursor-pointer';
 
 					if (selected) {
-						if (isCorrect) buttonStyle += ' bg-green-300';
-						else if (isSelected) buttonStyle += ' bg-red-300 opacity-60';
+						if (isCorrect) buttonStyle += ' bg-green-400';
+						else if (isSelected) buttonStyle += ' bg-red-400';
 						else buttonStyle += ' opacity-60';
 					}
 
@@ -85,8 +92,14 @@ export default function QuizPage() {
 			{selected && selected !== question.correct && (
 				<div className="mt-4 mx-auto w-fit">
 					<button
-						onClick={() => router.push(`?id=${id + 1}`)}
-						className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+						onClick={() => {
+							if (id >= questions.length) {
+								router.push(`/result?correct=${correct}&total=${questions.length}`);
+							} else {
+								router.push(`?id=${id + 1}&correct=${correct}`);
+							}
+						}}
+						className="px-4 py-2 bg-blue-500 text-white rounded hover:cursor-pointer hover:bg-blue-600"
 					>
 						Далі
 					</button>

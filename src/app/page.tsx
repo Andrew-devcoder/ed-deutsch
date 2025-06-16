@@ -10,7 +10,7 @@ export default function Home() {
 			<h1 className="text-3xl font-bold">Натисни, щоб почати</h1>
 			<button
 				onClick={() => router.push('/quiz?id=1')}
-				className="px-6 py-3 text-lg bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+				className="px-6 py-3 text-lg bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:cursor-pointer transition "
 			>
 				Почати
 			</button>
